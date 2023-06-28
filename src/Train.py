@@ -33,7 +33,7 @@ def make_dataset(resolution, ds_train, bs = 2):
     bs: batch size desired
   
   """
-
+  # dl = ds_train.map(lambda image: resize_image(resolution, image), num_parallel_calls=tf.data.AUTOTUNE).unbatch()
   dl = ds_train.map(partial(resize_image, resolution), num_parallel_calls=tf.data.AUTOTUNE).unbatch()
   dl = dl.shuffle(400).batch(bs, drop_remainder=True).prefetch(1).repeat()
   return dl
