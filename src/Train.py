@@ -7,6 +7,8 @@ import os
 from Music_Processing import normalize
 
 def _parse_features(example_proto, resolution):
+    
+    """ Parse TFRecord """
 
     features = {'image/height': tf.io.FixedLenFeature([], dtype=tf.int64),
                 'image/width': tf.io.FixedLenFeature([], dtype=tf.int64),
@@ -23,6 +25,8 @@ def _parse_features(example_proto, resolution):
     return image
 
 def get_dataset(ds_directory, resolution, bs=2, block_length=50):
+
+  """ Create tf.data.Dataset """
 
   dataset_files = glob(os.path.join(ds_directory, '*'))
   print(dataset_files)

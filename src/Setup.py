@@ -20,9 +20,11 @@ def composite_function(*funcs):
       funcs: a tuple of tuples that contain function name and function kwags
 
     """
-    funcs = list(funcs)
+    funcs = list(funcs) # Make tuple of tuples to a list of tuples 
+
+    # Create list of partial functions, will use functions_mapping to get the function and func_params for the parameters if x[1] is a string. However if x[1] is a dict then just use that.
     funcs = list(map(lambda x: partial( functions_mapping.get(x[0]), **(func_params.get(x[1]) if isinstance(x[1], str) else x[1])), funcs))
-    funcs = tuple(funcs)
+    # funcs = tuple(funcs)
 
     def compose(f_in, g_in):
         return lambda x : g_in(f_in(x))

@@ -7,6 +7,8 @@ import pandas as pd
 
 def normalize(signal, a, b):
 
+    """ Normalizes input to values between a and b """
+
     A = np.min(signal)
     B = np.max(signal)
 
@@ -16,6 +18,8 @@ def normalize(signal, a, b):
 
 def get_beat_impulse_idx(audio, sr, num_frames, params):
 
+    """ Get indices of the beats in the audio. Returns np.array of indices. """
+
     onset_env = librosa.onset.onset_strength(y=audio, sr=sr)
     pulse = librosa.beat.plp(onset_envelope=onset_env, sr=sr)
     tempo, beats = librosa.beat.beat_track(onset_envelope=onset_env)
@@ -24,6 +28,11 @@ def get_beat_impulse_idx(audio, sr, num_frames, params):
     return beats_idx
 
 def get_beat_plp(drums, sr, margin=3, hop_length=256, win_length=384, lognorm=True):
+
+    """
+    Uses beat.plp from librosa to get information on the beat track from the drums.
+    Normalizes the signal returned by beat.plp
+    """
 
     audio_percussive = librosa.effects.percussive(y=drums, margin=margin)
     onset_env = librosa.onset.onset_strength(y=audio_percussive, sr=sr)
@@ -69,6 +78,14 @@ def get_chroma(audio, sr, n_frames, margin=3, hop_length=512, use_harm=True, smo
 
 def decompose(audio, n_frames, smooth=6, margin=3):
 
+    """
+    Decomposes the audio into 12 components.
+    Gaussian filter the rows.
+    Transposes and normalizes so that rows adds to 1
+    Resample the image to the desired frames where n_frames = duration*fps.
+    Normalizes so that rows adds to 1 (Yes this is done twice. I tested this and found this returns best results)
+    """
+
     audio_harmonic, _ = librosa.effects.hpss(audio, margin=margin)
     S = np.abs(librosa.stft(audio_harmonic))
     comps, acts = librosa.decompose.decompose(S, n_components=12, max_iter=500) # (12, n)
@@ -102,7 +119,7 @@ def halfgaussian_kernel1d(sigma=10, radius=50):
 def gaussian_kernel1d(sigma=10, radius=50):
 
     """
-    Creates a 1-D Half-Gaussian convolution kernel.
+    Creates a 1-D Gaussian convolution kernel.
 
     """
     sigma2 = sigma * sigma
@@ -111,9 +128,21 @@ def gaussian_kernel1d(sigma=10, radius=50):
     phi_x = phi_x / phi_x.sum()
     return phi_x
 
-def convolve(impulse_signal, hgauss, radius):
+def convolve(impulse_signal, gauss, radius):
 
-    conv_out = scipy.ndimage.convolve1d(impulse_signal, hgauss/hgauss.max(), axis=-1)
+    """ 
+    Convolve the inpulse signal with gauss.
+
+    Input:
+        inpulse_signal: (num_frames,) with zeros except at certain indices where an inpulse lies.
+        gauss: gaussian kernel for convolution
+
+    Shift so that at each index where a impulse lied, the peak of convolution from the gaussian kernel is located at the same index. This is done with the following:
+    pad the start due to the effects of convolution and return [:-(radius // 2)]
+
+    """
+
+    conv_out = scipy.ndimage.convolve1d(impulse_signal, gauss/gauss.max(), axis=-1)
     conv_pad = np.pad(conv_out, (radius // 2, 0), mode='constant')
     return conv_pad[:-(radius // 2)]
 
@@ -159,6 +188,8 @@ def make_plateu(array, max_min = (1, 0.9)):
 
 def calculate_energy(signal, window_size=60, norm_with_mean=True):
 
+    """ Batch the signal into windows of size window_size and calculate the energy of each batch and reassemble the signal, although the length will be smaller. """
+
     num = signal.shape[0] // window_size
     idx = window_size*num
 
@@ -171,6 +202,8 @@ def calculate_energy(signal, window_size=60, norm_with_mean=True):
 
 def butter_filt(cutoff, fs, ftype='low', order=3):
 
+    """ Build Butter Filter. """
+
     nyq = 0.5 * fs
     normal_cutoff = cutoff / nyq
     b, a = scipy.signal.butter(order, normal_cutoff, btype=ftype, analog=False)
@@ -178,12 +211,16 @@ def butter_filt(cutoff, fs, ftype='low', order=3):
 
 def butter_filter(data, cutoff, fs, ftype, order=5):
 
+    """ Filter with Butter Filter. """
+
     b, a = butter_filt(cutoff, fs, ftype, order=order)
     y = scipy.signal.filtfilt(b, a, data)
     return y
 
 def tempo_segmentation(audio, num_frames, cutoff=1, fs=100, ftype='low'):
 
+    """ Cheap way to perform tempo segmentation. """
+    
     rms         = calculate_rms(audio)
     filt_energy = butter_filter(rms, cutoff=cutoff, fs=fs, ftype=ftype)
     filt_energy = np.clip(scipy.signal.resample(filt_energy, num_frames), filt_energy.min(), filt_energy.max())
@@ -191,8 +228,12 @@ def tempo_segmentation(audio, num_frames, cutoff=1, fs=100, ftype='low'):
 
 def calculate_rms(audio, window_size=None):
 
+    """ Calculates RMS of a signal. """
+
     return librosa.feature.rms(y=audio)[0]
 
 def calculate_ema(audio):
+
+    """ Runs Exponential moving average. """
 
     return pd.Series(audio).ewm(span = 2/0.05-1).mean()

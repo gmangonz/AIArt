@@ -52,6 +52,17 @@ def generate_z(seeds=None):
 
 
 def generate_sawtooth(impulse_idxs, num_frames, rms_signal=None):
+    
+    """
+    Given the indicies indicating tempo changes, iterate through start and end pairs to generate a signal that goes from 0 to 1.
+    This signal can be scaled depending on the RMS seen between the start and end points. 
+
+    This signal will be used in Noise.rotate_noise and will be mapped from 0-1 to 0-360 degrees. Essentially creating faux 3D noise.
+    
+
+    Output:
+      out: (num_frames,)
+    """
 
     scale = 1
     out = np.zeros(num_frames)
@@ -66,6 +77,8 @@ def generate_sawtooth(impulse_idxs, num_frames, rms_signal=None):
 
 @tf.function(input_signature=(tf.TensorSpec(shape=(None, 1, 512), dtype=tf.float32), ))
 def safe_normalize(v):
+    
+    """ Normalizes the input tensor. Safegaurds against dividing by zero. Returns tensor of same shape. """
 
     norm      = tf.clip_by_value(tf.norm(v, axis=-1, keepdims = True), 1e-36, 1e36)
     norm_safe = tf.logical_and(tf.not_equal(norm, 0.), tf.logical_not(tf.math.is_nan(norm)))

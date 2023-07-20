@@ -210,10 +210,6 @@ class NetworkBending(layers.Layer):
   def call(self, inputs): # inputs: (x, dict('layer_name': [transformation, magnitude]))
 
     input, transformation_dict = inputs
-    # for name, (transformation, magnitude) in transformation_dict.items():
-    #   if name == self.layer_name:
-    #     input = transformation([input, magnitude])
-
     for name, transformation_func in transformation_dict.items():
       if name == self.layer_name:
         input = transformation_func(input)
