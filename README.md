@@ -13,9 +13,8 @@ To learn how StyleGAN2 works, it'll be best to look at the resources provided in
 
 Now, what aspects of the music do I use? As a reference, some of these signals I extract from the audio are shown below.
 
-- self.audio_chroma:
-
-![chromogram](./images/audio_decompose.jpg)
+- `self.audio_chroma`:
+<img src="./images/audio_decompose.jpg" width=500px>
 
 ## TODO:
 
