@@ -222,7 +222,6 @@ My most ambitious goal when approaching this project was to make it real-time so
 - [ ] Make custom upsample and downsample function.
 - [x] Tempo Segmentation fix.
 - [x] Network Bending - Translation and Rotation fix.
-- [-] Implement ```Setup``` with ```tf.signal```.
 - [ ] Research real time music component seperation.
 - [x] Make ```get_noise()``` run in real time.
 - [ ] Create my own dataset.
