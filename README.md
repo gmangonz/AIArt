@@ -35,8 +35,11 @@ Now, what aspects of the music do I use? As a reference, some of these signals I
 
 - [x] Tempo Segmentation fix.
 - [x] Network Bending - Translation and Rotation fix.
+- [x] Network Bending - Add more transformations.
 - [ ] Research real time music component seperation.
-- [x] Make ```get_noise()``` run in real time.
+- [x] Make ```self.get_noise()``` run in real time.
+- [x] Create 3D faux noise.
+- [x] Play with displacement maps, tfa.image.dense_image_warp
 - [ ] Create my own dataset.
 - [ ] Train model longer to get good images with any seed.
 - [ ] StyleGAN3.
