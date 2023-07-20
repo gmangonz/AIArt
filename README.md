@@ -16,6 +16,21 @@ Now, what aspects of the music do I use? As a reference, some of these signals I
 - `self.audio_chroma`:
 <img src="./images/audio_decompose.jpg" width=500px>
 
+- `self.drums_rms`:
+<img src="./images/drums_rms.jpg" width=500px>
+
+- `rms_signal_for_noise`:
+<img src="./images/drums_rms_signal_for_noise.jpg" width=500px>
+
+- `sawtooth_signal`:
+<img src="./images/sawtooth.jpg" width=500px>
+
+- drums onsets smoothed peaks (Used for network bending):
+<img src="./images/drums_onsets_smoothed_peaks.jpg" width=500px>
+
+- drums onsets smoothed peaks plateud version (Used only for Zoom for network bending):
+<img src="./images/drums_onsets_smoothed_peaks_plateu.jpg" width=500px>
+
 ## TODO:
 
 - [x] Tempo Segmentation fix.
