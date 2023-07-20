@@ -31,6 +31,15 @@ Now, what aspects of the music do I use? As a reference, some of these signals I
 - drums onsets smoothed peaks plateud version (Used only for Zoom for network bending):
 <img src="./images/drums_onsets_smoothed_peaks_plateu.jpg" width=500px>
 
+To set up the latents, I have to get them to a Tensor of shape (1, 8, 512) for the 8 blocks in my version of StyleGAN2. However that is to only make one image, so I actually have to get an array of (num_frames, 8, 512) where num_frames = duration * fps. The latents are dependent on 2 things: Tempo Segmentation and Chromagram/Decomposition of the audio. The tempo segmentation divides the audio into segments where the tempo changes. Chromagram/Decomposition of the audio produces 12 components which can be used to create weighted latents. 
+
+### Tempo Segmentation
+
+After running `tempo_segmentation()` within `Music_Processing.py`, I have different points indicating changes in tempo. These are seen by the yellow points in the following image.
+<img src="./images/tempo_segmentation.jpg" width=500px>
+
+Now, to make an array of (num_frames, 8, 512) I actually need to create an array of (num_frames, 1, 512). I do this by assigning each segment with a unique latent vector. However to avoid abrupt changes, I interpolate between latents whenever there is a change within ```.get_latents_from_impulse()``` using ```slerp()```. 
+
 ## TODO:
 
 - [x] Tempo Segmentation fix.
@@ -39,7 +48,7 @@ Now, what aspects of the music do I use? As a reference, some of these signals I
 - [ ] Research real time music component seperation.
 - [x] Make ```self.get_noise()``` run in real time.
 - [x] Create 3D faux noise.
-- [x] Play with displacement maps, `tfa.image.dense_image_warp`
+- [x] Play with displacement maps and `tfa.image.dense_image_warp`
 - [ ] Create my own dataset.
 - [ ] Train model longer to get good images with any seed.
 - [ ] StyleGAN3.
