@@ -220,11 +220,11 @@ My most ambitious goal when approaching this project was to make it real-time so
 ### Summary - TODO:
 
 - [ ] Make custom upsample and downsample function.
-- [ ] Tempo Segmentation fix.
-- [ ] Network Bending - Translation and Rotation fix.
-- [ ] Implement ```Setup``` with ```tf.signal```.
+- [x] Tempo Segmentation fix.
+- [x] Network Bending - Translation and Rotation fix.
+- [-] Implement ```Setup``` with ```tf.signal```.
 - [ ] Research real time music component seperation.
-- [ ] Make ```get_noise()``` run in real time.
+- [x] Make ```get_noise()``` run in real time.
 - [ ] Create my own dataset.
 - [ ] Train model longer to get good images with any seed.
 - [ ] StyleGAN3.
