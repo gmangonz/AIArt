@@ -79,7 +79,9 @@ def get_chroma(audio, sr, n_frames, margin=3, hop_length=512, use_harm=True, smo
 def decompose(audio, n_frames, smooth=6, margin=3):
 
     """
-    Decomposes the audio into 12 components.
+    Get the harmonic components of the audio.
+    Get spectrogram.
+    Decomposes the spectrogram into 12 components.
     Gaussian filter the rows.
     Transposes and normalizes so that rows adds to 1
     Resample the image to the desired frames where n_frames = duration*fps.
@@ -220,7 +222,7 @@ def butter_filter(data, cutoff, fs, ftype, order=5):
 def tempo_segmentation(audio, num_frames, cutoff=1, fs=100, ftype='low'):
 
     """ Cheap way to perform tempo segmentation. """
-    
+
     rms         = calculate_rms(audio)
     filt_energy = butter_filter(rms, cutoff=cutoff, fs=fs, ftype=ftype)
     filt_energy = np.clip(scipy.signal.resample(filt_energy, num_frames), filt_energy.min(), filt_energy.max())

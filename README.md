@@ -40,6 +40,18 @@ After running `tempo_segmentation()` within `Music_Processing.py`, I have differ
 
 Now, to make an array of (num_frames, 8, 512) I actually need to create an array of (num_frames, 1, 512). I do this by assigning each segment with a unique latent vector. However to avoid abrupt changes, I interpolate between latents whenever there is a change within ```.get_latents_from_impulse()``` using ```slerp()```. 
 
+### Decomposition
+Passing the audio into `decompose()` I obtain 12 compenents of the audio (this is significantly faster than `get_chroma()` and yields similar effects) which can be best explained ![here](https://librosa.org/doc/main/generated/librosa.decompose.decompose.html). This gives an array of shape (num_frams, 12). If we take an array of 12 latent vectors i.e (12, 1, 512), reshape it to (12, 512), and perform matrix multiplication and reshape, we get (num_frams, 1, 512) which creates a sequence of weighted latents. 
+
+
+### Form latents
+From Tempo Segmentation, we have (num_frames, 1, 512) and from Decomposition, we have (num_frams, 1, 512). However, the input required is (num_frames, 8, 512). Therefore, I tile each and stack them on top of each other to create latent vectors of shape (num_frames, 8, 512). How to tile and which to stack on top of which leads to different effects, however, as preference I like tiling the tempo segmentation output to (num_frames, 6, 512) and the decomposition to (num_frames, 2, 512) and stack the tempo segmentation output on top of the decomposition output. 
+
+### Latent modulation
+
+
+
+
 ## TODO:
 
 - [x] Tempo Segmentation fix.
