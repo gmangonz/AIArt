@@ -18,7 +18,7 @@ from Network_Bending import DisplacementMap, Zoom
 from StyleGAN2 import StyleGAN2
 from Parameters import params, num_frames, zoom_params
 from Setup import MusicProcessing
-from Noise import get_noise, rotate_noise, image_warp, get_base_noise, get_displacement_map
+from Noise import rotate_noise, image_warp, get_base_noise, get_displacement_map
 from Music_Processing import normalize, make_plateu
 
 def get_seeds(name, input_list):
@@ -283,7 +283,7 @@ class AudioReactive(MusicProcessing):
     # Prepare Sawtooth signal and sigma 
     rms_signal           = scipy.signal.resample(scipy.ndimage.gaussian_filter1d(librosa.feature.rms(y=self.drums)[0], 64, axis=-1, order=0, output=None, mode='reflect', cval=0.0, truncate=4.0), num_frames)
     rms_signal_for_noise = normalize(rms_signal, 0.4, 1.2) # Less RMS -> Smoother, More -> Sharper
-    sawtooth_signal      = generate_sawtooth(self.segmentation_idxs, self.num_frames, normalize(rms_signal, 1, 3)) # sawtooth wave, in get_noise -> rotate_noise will be mapped to 0-360
+    sawtooth_signal      = generate_sawtooth(self.segmentation_idxs, self.num_frames, normalize(rms_signal, 1, 3)) # sawtooth wave, in self.get_noise -> rotate_noise will be mapped to 0-360
 
     print('Generating Images...')
     for frame in tqdm(range(self.num_frames)):
