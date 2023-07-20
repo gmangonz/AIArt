@@ -49,7 +49,7 @@ Additionally, I decided to use a different radius_2 to make the effect suble but
  
  That is basically how ```AudioReactive``` and ```Setup``` work to add music dependencies to the inputs of StyleGAN2. However, I did not mention ```.noise_transforms(...)``` within ```AudioReactive``` that is used in line 251. I honestly don't think it has any effect, I just kept it there. But line 251 can be changed to the following:
  
- ```bash
+ ```python
  noise_in = [noise_block[:, frame, :, :, :][:, None, :, :, :] for noise_block in noises]
  ```
 
@@ -60,20 +60,20 @@ Although an ambitious project, I'm glad I took it up and challenged myself. I th
 - Tensorflow's ``` def build(self, input_shape): ``` came in handy. I can pass a tensor to a ```tf.keras.layers.Layer``` without knowing the shape of the input tensor and still run ``` def call(self, input): ``` as I can use ```build()``` to get the needed shape dependent inputs. 
     - As a note, I had quite a few errors within ```build()```. When creating a kernel:
 
-    ```bash
+    ```python
     def build(self, input_shape):
         self.w = self.add_weight(...)
     ```
     I need to make sure to not do any operations with self.w within ```build()``` rather do it in ```def call()```.
     Example:
-    ```bash
+    ```python
     def build(self, input_shape):
         self.w = self.add_weight(shape=[Kernel_Height, Kernel_Width, In Channels, Out Channels], initializer='zeros', trainable=True)
         self.w = self.w * scale
         super().build(input_shape)
     ```
     Should be: 
-    ```bash
+    ```python
     def build(self, input_shape):
         self.w = self.add_weight(shape=[Kernel_Height, Kernel_Width, In Channels, Out Channels], initializer='zeros', trainable=True)
         self.scale = scale
@@ -83,14 +83,14 @@ Although an ambitious project, I'm glad I took it up and challenged myself. I th
         super().build(input_shape)
     ```  
 - ```tf.transpose```. I used this function a lot and learned how it works. 
-```bash
+```python
 tf.transpose(Tensor, [0, 1, 2]) # Does nothing
 tf.transpose(Tensor, [1, 0, 2]) # Changes the position of the first and second axis (non-zero index). 
 tf.transpose(Transposed_Tensor, [1, 0, 2]) # Would change back to original Tensor
 ```
 - ```tf.reshape``` was also used extensively and got familiar with using -1 and with the fact the sum of the number of axes is preserved.
 - ```tf.tile``` came in handy aswell. 
-```bash
+```python
 tf.tile(Tensor, [1, 8, 1]) # tiles the 2nd axis 8 times.
 ```
 - How to add an axis:
@@ -105,7 +105,7 @@ tf.tile(Tensor, [1, 8, 1]) # tiles the 2nd axis 8 times.
 - ```tf.Variable(0.0)``` and ```.assign(new_value)``` with ```def update(...)``` (ada) or ```def train_step(...)``` (StyleGAN2).
 - Taking advantage of ```def train_step(...)``` within ```tf.keras.Model``` object.
     - Paired with:
-        ```
+        ``` python
         @property
         def metrics(self):
             return [self.discriminator_loss_metric, self.generator_loss_metric, self.real_accuracy, self.generated_accuracy, self.augmentation_probability_tracker]
@@ -113,7 +113,7 @@ tf.tile(Tensor, [1, 8, 1]) # tiles the 2nd axis 8 times.
         is quite neat. Allows to update the metrics displayed with ```.update_state(...)``` of a ```tf.keras.metrics``` object.
     - ```return {m.name: m.result() for m in self.metrics}```
 - Cool little trick I experimented with:
-    ```   
+    ```   python
     def compile(self, steps_per_epoch, optimizer={}, metrics={}, *args, **kwargs):
         # Stuff
         super(StyleGAN2, self).compile(*args, **kwargs)
@@ -128,7 +128,7 @@ tf.tile(Tensor, [1, 8, 1]) # tiles the 2nd axis 8 times.
 
 Because the input latents (w's) of StyleGAN2 are created from random vectors mapped by the Mapping Network, I had to select seeds that allowed for replicability and selectability of the random vectors created. Therefore within Audioreactive.py, it took quite a bit of trial and error to choose the latent's seeds that gave a decent looking image. For the melody latents, because they are weighted with the chromagram (inspired by [JCBrouwer](https://github.com/JCBrouwer/maua-stylegan2/blob/7f9282141053be85ecb1ecc4a19f11bda90298b7/audioreactive/latent.py) and his [examples](https://github.com/JCBrouwer/maua-stylegan2/blob/7f9282141053be85ecb1ecc4a19f11bda90298b7/audioreactive/examples/default.py)) I can't add more than 12, rather I chose those that I liked. However for the drum and tempo latents, because the number of drum beats and different tempo segments can vary from audio to audio, I just chose those that gave an "artistic" image when tiled together [here](https://github.com/gmangonz/Personal/blob/main/AIART/src/Audioreactive.py) in line 189. However its quite apparent that this leads to repetitive images when rendered using a long audio segment. This is mostly because of the lack of versatility of the StyleGAN2 model I trained. Although there are thousands of images that can be rendered, after selecting those that I liked and those that, when tiled together, did not give a very blobby noisy image, I was left with those seen below. However, I would like to have it so that a random number is generated when a new seed is needed and have confidence that a good image will be generated using that seed. This ultimately means I would have to train the model for a longer amount of time and with a better, less sporadic dataset. Ideally a dataset that I create myself so that I can have some say in the output rather than rely on [WikiArt](https://www.wikiart.org/en/paintings-by-genre). However that would be a project on its own and probably not achievable anytime soon with my lack of GPU resources, money, and time now that I have graduate school.
 
-```bash
+```python
 # Set seeds
 self.melody_latents_seeds = [388, 51, 97, 251, 389, 447, 185, 35, 166, 8, 21, 39]
 self.drum_latents_seeds = [1, 39, 51, 97, 125, 166, 232, 251, 196, 320, 389]
@@ -142,7 +142,7 @@ In addition to what I mentioned above, I would also like to implement my own ups
 ### Tempo Segmentation
 Within Setup.py, I cheated and manually selected the times that I felt had a shift in tempo after listening to the audio. Therefore I actually did not use the ruptures package because during testing, when trying to run the 451 second long audio, it kept running for a couple hours. However, I would like to implement a system that could do this fast and effectively.
 
-```bash
+```python
 
 def tempo_segmentation():
 
@@ -162,13 +162,13 @@ def tempo_segmentation():
 ### Network Bending
 
 As of now, I only have Zoom implemented in Audioreactive.py in line 255.
-```bash
+```python
 # Network Bending: Zoom, Translation, Rotation
 transformation_dict = {'generator__block_6': [ Zoom(), self.setup.drums_onsetsMid_2_r_p[frame] ], 'generator__block_3': [ Zoom(), self.setup.bass_onsetsHigh_2_r_p[frame] ]}
 ```
 However, I would like to also implement Translation and Rotation into Audioreactive.py. Unfortunately because some of the functions weren't working, I only focused on getting Zoom to work with Audioreactive and therefore left Translation and Rotation in the dark. But now that I know how I got Zoom to work, I think getting Translation and Rotation to work would involve making the similar changes I made to Zoom (I think it was to use the ```tf.keras.preprocessing.image``` package rather than the ```tf.keras.layers``` that was the fix).
 
-```bash
+```python
 
 class Translation(layers.Layer): ############## MAKE CHANGES to match zoom_range=(mag, mag)
 
