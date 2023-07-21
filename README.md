@@ -14,29 +14,29 @@ To learn how StyleGAN2 works, it'll be best to look at the resources provided in
 Now, what aspects of the music do I use? As a reference, some of these signals I extract from the audio are shown below.
 
 - `self.audio_chroma`:
-<img src="./images/audio_decompose.jpg" width=300px>
+<img src="./images/audio_decompose.jpg" width=375px>
 
 - `self.drums_rms`:
-<img src="./images/drums_rms.jpg" width=300px>
+<img src="./images/drums_rms.jpg" width=375px>
 
 - `rms_signal_for_noise`:
-<img src="./images/drums_rms_signal_for_noise.jpg" width=300px>
+<img src="./images/drums_rms_signal_for_noise.jpg" width=375px>
 
 - `sawtooth_signal`:
-<img src="./images/sawtooth.jpg" width=300px>
+<img src="./images/sawtooth.jpg" width=375px>
 
 - drums onsets smoothed peaks (Used for network bending):
-<img src="./images/drums_onsets_smoothed_peaks.jpg" width=300px>
+<img src="./images/drums_onsets_smoothed_peaks.jpg" width=375px>
 
 - drums onsets smoothed peaks plateud version (Used only for Zoom for network bending):
-<img src="./images/drums_onsets_smoothed_peaks_plateu.jpg" width=300px>
+<img src="./images/drums_onsets_smoothed_peaks_plateu.jpg" width=375px>
 
 To set up the latents, I have to get them to a Tensor of shape (1, 8, 512) for the 8 blocks in my version of StyleGAN2. However that is to only make one image, so I actually have to get an array of (num_frames, 8, 512) where num_frames = duration * fps. The latents are dependent on 2 things: Tempo Segmentation and Chromagram/Decomposition of the audio. The tempo segmentation divides the audio into segments where the tempo changes. Chromagram/Decomposition of the audio produces 12 components which can be used to create weighted latents. 
 
 ### Tempo Segmentation
 
 After running `tempo_segmentation()` within `Music_Processing.py`, I have different points indicating changes in tempo. These are seen by the yellow points in the following image.
-<img src="./images/tempo_segmentation.jpg" width=300px>
+<img src="./images/tempo_segmentation.jpg" width=375px>
 
 Now, to make an array of (num_frames, 8, 512) I actually need to create an array of (num_frames, 1, 512). I do this by assigning each segment with a unique latent vector. However to avoid abrupt changes, I interpolate between latents whenever there is a change within ```.get_latents_from_impulse()``` using ```slerp()```. 
 
@@ -58,11 +58,11 @@ Now, as an additional visual effect, I decided to implement displacement maps (t
 
    noise image - x      |       noise image - y        |
 :-------------------------:|:------------------------:|
-| <img src="images\x.jpg" width=300px> | <img src="images\y.jpg" width=300px> |
+| <img src="images\x.jpg" width=375px> | <img src="images\y.jpg" width=375px> |
 
    resized noise image - x      |       resized noise image - y        |
 :-------------------------:|:------------------------:|
-| <img src="images\x_clouds.jpg" width=300px> | <img src="images\y_clouds.jpg" width=300px> |
+| <img src="images\x_clouds.jpg" width=375px> | <img src="images\y_clouds.jpg" width=375px> |
 
 Cheap perlin noise! :D
 
@@ -70,7 +70,7 @@ Now, I perform the same rotation process mentioned in Noise to create faux 3D pe
 
    Original Image      |       Displacement Map effect        |
 :-------------------------:|:------------------------:|
-| <img src="images\image.jpg" width=300px> | <img src="images\displace_image.jpg" width=300px> |
+| <img src="images\image.jpg" width=375px> | <img src="images\displace_image.jpg" width=375px> |
 
 However, this is applied to the noise. This effect is also included as a transformation in `Network_Bending.py` to create interesting effects. 
 
