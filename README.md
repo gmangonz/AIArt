@@ -1,15 +1,15 @@
 # AIART
-This repo contains the code for my Film 499 visual art project seen [here](https://youtu.be/CnGdIXuR7QU).
+This repo contains the code for my Film 499 visual art project seen [here](https://youtu.be/CnGdIXuR7QU). However, with recent improvements, the results will be updated soon.
 
-UPDATE: I have made significant improvements to the AudioReactivity, the old README.md for reference is located in /src.
+UPDATE: I have made significant improvements to the audio reactivity, the old README.md for reference is located in /deprecated.
 
 ## Usage
 
-[AIART.py](https://github.com/gmangonz/Personal/blob/main/AIART/AIART.ipynb) gives the process of how to train StyleGAN2 or run ```AudioReactive```, just make sure to change Parameters.py.
+[AIART.py](https://github.com/gmangonz/Personal/blob/main/AIART/AIArt.ipynb) gives the process of how to train StyleGAN2 and run ```AudioReactive```, just make sure to change Parameters.py.
 
 ## How it works
 
-To learn how StyleGAN2 works, it'll be best to look at the resources provided in References as those are the what helped me learn to implement this project from scratch. To get AudioReactive to work, I basically have to get the 3 inputs needed for StyleGAN2 that have dependencies on music signals. However one of the inputs is a 4x4 constant image, so I only have to get 2 inputs. These are obtained with ```.get_latents(...)``` and ```.get_noise(...)``` within ```AudioReacive```.
+To learn how StyleGAN2 works, it'll be best to look at the resources provided in References as those are the what helped me learn to implement this project from scratch. To get AudioReactive to work, I basically have to get the 3 inputs needed for StyleGAN2 that have dependencies on music signals. However one of the inputs is a 4x4 constant image, so I only have to get 2 inputs. These are obtained with ```.get_latents(...)``` and ```.get_noise(...)``` within ```AudioReactive()```.
 
 Now, what aspects of the music do I use? As a reference, some of these signals I extract from the audio are shown below.
 
