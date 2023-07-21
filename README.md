@@ -53,13 +53,20 @@ The latents created above are the base latents. I also create another set of lat
 ### Noise
 To create noise, I simply create 1 noise image of shape (res, res, 2) using a standard normal distrubution for each resolution in [4, 8, 16, 32, 64, 128, 256, 512] (i.e the input sizes to StyleGAN2). Now to create faux 3D noise I actually treat this noise image of 2 channels as 2-D vectors that I can rotate. So for each frame, take the noise and use `sawtooth_signal` to rotate the vectors and scale with `rms_signal_for_noise`. This scale essentially changes the standard normal standard deviation to sigma. Lower sigma = smoother noise. Higher sigma = sharper noise. The resulting rotated and scaled noise image is added along the channels to create an image of shape (res, res, 1) which is the appropriate input shape for StyleGAN2. Cheap fake 3D noise... :D
 
+2 images
+
 ### Displacement Maps
-Now, as an additional visual effect, I decided to implement displacement maps (term from Adobe After Affects) in the form of tfa.image.dense_image_warp. The input to tfa.image.dense_image_warp is an image of shape (Batch Size, Height, Width, Channels) and flow of shape (Batch Size, Height, Width, 2). The idea can be explained [here](https://www.tensorflow.org/addons/api_docs/python/tfa/image/dense_image_warp), but essentially, flow is used to displace pixels to new x-y positions (hence the need for 2 channels). 
-Cheap fake perlin noise... :D
+Now, as an additional visual effect, I decided to implement displacement maps (term from Adobe After Affects) in the form of `tfa.image.dense_image_warp`. The input to `tfa.image.dense_image_warp` is an image of shape (Batch Size, Height, Width, Channels) and flow of shape (Batch Size, Height, Width, 2). The idea can be explained [here](https://www.tensorflow.org/addons/api_docs/python/tfa/image/dense_image_warp), but essentially, flow is used to displace pixels to new x-y positions (hence the need for 2 channels). To get flow, I wanted to make perlin noise so that the displacements are random throught the image and aren't abrupt between images. Therefore I decided to create perlin noise... or cheap fake perlin noise :D. I essentially perform the same process as explained in Noise, create image of shape (res, res, 2) from standard normal. However the resolution is predetermined in `Parameters.py`. To create the cloud noise seen in perlin noise, I resize the image which creates what is seen below.
+
+2 images
+
+Now, I perform the same rotation process mentioned in Noise to create faux 3D perlin noise. And this is fed to `tfa.image.dense_image_warp` where I scale the displacement with an amplitude factor that comes from `drums_rms` and the rotation comes from `sawtooth_signal`.
+
 
 ### Network Bending
-Now the final part of the audio reactivity is to perform transformations at certain layers within the cascade of StyleGAN2 which can be trickled up to the final output. 
+Now the final part of the audio reactivity is to perform transformations at certain layers within the cascade of StyleGAN2 which can be trickled up to the final output. The transformations can be found in `Network_Bending.py`.
 
+To get the Network Bending to work, I had to create *drums onsets smoothed peaks* and *drums onsets smoothed peaks plateud*. The reason for the plateud version is because in ```tf.keras.preprocessing.image.random_zoom(x_t, zoom_range=(mag, mag))``` if ```mag>1```, then the zoom is outwards - image becomes smaller, however I wanted to zoom in. Additionally, if ```mag==1``` then there is no effect, basically 1 is default. Therefore I needed to create a signal of 1's that had dips to values less than 1 to zoom in whenever there is a drum hit. All other transformations use *drums onsets smoothed peaks*.
 
 ## TODO:
 
