@@ -77,10 +77,10 @@ Although an ambitious project, I'm glad I took it up and challenged myself. I th
     def build(self, input_shape):
         self.w = self.add_weight(shape=[Kernel_Height, Kernel_Width, In Channels, Out Channels], initializer='zeros', trainable=True)
         self.scale = scale
+        super().build(input_shape)
     def call(self, input_tensor):
         self.w = self.w * self.scale
         # Continue
-        super().build(input_shape)
     ```  
 - ```tf.transpose```. I used this function a lot and learned how it works. 
 ```python
