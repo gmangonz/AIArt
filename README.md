@@ -48,16 +48,17 @@ Passing the audio into `decompose()` I obtain 12 compenents of the audio (this i
 From Tempo Segmentation, we have (num_frames, 1, 512) and from Decomposition, we have (num_frams, 1, 512). However, the input required is (num_frames, 8, 512). Therefore, I tile each and stack them on top of each other to create latent vectors of shape (num_frames, 8, 512). How to tile and which to stack on top of which leads to different effects, however, as preference I like tiling the tempo segmentation output to (num_frames, 6, 512) and the decomposition to (num_frames, 2, 512) and stack the tempo segmentation output on top of the decomposition output. 
 
 ### Latent Modulation
-
+The latents created above are the base latents. I also create another set of latent vectors of shape (num_frames, 8, 512). These latent vectors are created by tiling the decomposition ouputs to (num_frames, 2, 512) and the tempo segmentation outputs to (num_frames, 4, 512). Now to fill in the remaining 2 needed for a stack of 8, I run tempo segmentation again but with different seeds to create different vectors. These new outputs are tiled from (num_frames, 1, 512) to (num_frames, 2, 512) and are placed between the decomposition outputs and the original tempo segmentation outputs. From bottom to top these new latents come from decomposition (tiled by 2), tempo segmentation (new seeds tiled by 2) and tempo segmentation (original tiled by 4). Now, with 2 different sets of latent vectors, each of shape (num_frames, 8, 512), I can modulate between them with `drums_rms`.
 
 ### Noise
-
+To create noise, I simply create 1 noise image of shape (res, res, 2) using a standard normal distrubution for each resolution in [4, 8, 16, 32, 64, 128, 256, 512] (i.e the input sizes to StyleGAN2). Now to create faux 3D noise I actually treat this noise image of 2 channels as 2-D vectors that I can rotate. So for each frame, take the noise and use `sawtooth_signal` to rotate the vectors and scale with `rms_signal_for_noise`. This scale essentially changes the standard normal standard deviation to sigma. Lower sigma = smoother noise. Higher sigma = sharper noise. The resulting rotated and scaled noise image is added along the channels to create an image of shape (res, res, 1) which is the appropriate input shape for StyleGAN2. Cheap fake 3D noise... :D
 
 ### Displacement Maps
-
+Now, as an additional visual effect, I decided to implement displacement maps (term from Adobe After Affects) in the form of tfa.image.dense_image_warp. The input to tfa.image.dense_image_warp is an image of shape (Batch Size, Height, Width, Channels) and flow of shape (Batch Size, Height, Width, 2). The idea can be explained [here](https://www.tensorflow.org/addons/api_docs/python/tfa/image/dense_image_warp), but essentially, flow is used to displace pixels to new x-y positions (hence the need for 2 channels). 
+Cheap fake perlin noise... :D
 
 ### Network Bending
-
+Now the final part of the audio reactivity is to perform transformations at certain layers within the cascade of StyleGAN2 which can be trickled up to the final output. 
 
 
 ## TODO:
