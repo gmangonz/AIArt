@@ -5,7 +5,7 @@ UPDATE: I have made significant improvements to the audio reactivity, the old RE
 
 ## Usage
 
-[AIART.py](https://github.com/gmangonz/Personal/blob/main/AIART/AIArt.ipynb) gives the process of how to train StyleGAN2 and run ```AudioReactive```, just make sure to change Parameters.py.
+[AIArt.ipynb](https://github.com/gmangonz/AIArt/blob/updates/AIART.ipynb) gives the process of how to train StyleGAN2 and run ```AudioReactive```, just make sure to change Parameters.py.
 
 ## How it works
 
