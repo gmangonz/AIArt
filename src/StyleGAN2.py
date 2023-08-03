@@ -25,8 +25,8 @@ class AdaptiveAugmenter(tf.keras.Model):
         self.max_translation = 0.25 # 0.125
         self.max_rotation = 0.25 # 0.125
         self.max_zoom = 0.25
-        self.target_accuracy = 0.85 # 0.85, 0.95
-        self.integration_steps = 1500 # 1000, 2000
+        self.target_accuracy = 0.8 # 0.85, 0.95
+        self.integration_steps = 1000 # 1000, 2000
         self.augmenter = keras.Sequential([layers.InputLayer(input_shape=(2**log2_resolution, 2**log2_resolution, 3)),
                                            layers.RandomFlip("horizontal"),
                                            layers.RandomTranslation(height_factor=self.max_translation,
@@ -116,14 +116,23 @@ class StyleGAN2(tf.keras.Model):
     self.train_step_counter.assign(0)
     self.steps_per_epoch = steps_per_epoch
 
-    self.discriminator_optimizer = optimizer.get('d_opt', tf.keras.optimizers.Adam(**{"learning_rate": 1e-3, "beta_1": 0.5, "beta_2": 0.99, "epsilon": 1e-8})) # CHANGED beta_1 from 0.0 to 0.5 3/21/22
-    self.generator_optimizer = optimizer.get('g_opt', tf.keras.optimizers.Adam(**{"learning_rate": 1e-3, "beta_1": 0.5, "beta_2": 0.99, "epsilon": 1e-8})) # CHANGED beta_1 from 0.0 to 0.5 3/21/22
+    # def decayed_learning_rate(step):
+    #   return initial_learning_rate * decay_rate ^ (step / decay_steps)
+
+    initial_learning_rate = 1e-3
+    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate, 
+                                                                 decay_steps=25000, 
+                                                                 decay_rate=0.7, 
+                                                                 staircase=True)
+
+    self.discriminator_optimizer = optimizer.get('d_opt', tf.keras.optimizers.legacy.Adam(**{"learning_rate": lr_schedule, "beta_1": 0.5, "beta_2": 0.99, "epsilon": 1e-8})) # CHANGED beta_1 from 0.0 to 0.5 3/21/22
+    self.generator_optimizer     = optimizer.get('g_opt', tf.keras.optimizers.legacy.Adam(**{"learning_rate": lr_schedule, "beta_1": 0.5, "beta_2": 0.99, "epsilon": 1e-8})) # CHANGED beta_1 from 0.0 to 0.5 3/21/22
 
     self.discriminator_loss_metric = tf.keras.metrics.Mean(name="d_loss")
-    self.generator_loss_metric = tf.keras.metrics.Mean(name="g_loss")
+    self.generator_loss_metric     = tf.keras.metrics.Mean(name="g_loss")
 
-    self.real_accuracy = keras.metrics.BinaryAccuracy(name="real_acc")
-    self.generated_accuracy = keras.metrics.BinaryAccuracy(name="gen_acc")
+    self.real_accuracy                    = keras.metrics.BinaryAccuracy(name="real_acc")
+    self.generated_accuracy               = keras.metrics.BinaryAccuracy(name="gen_acc")
     self.augmentation_probability_tracker = keras.metrics.Mean(name="aug_p")
 
     super(StyleGAN2, self).compile(*args, **kwargs)

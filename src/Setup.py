@@ -12,7 +12,6 @@ from Parameters import functions_mapping, func_params, audio_config, signals_con
 from Network_Bending import DisplacementMap
 from Music_Processing import tempo_segmentation
 
-
 def composite_function(*funcs):
 
     """
@@ -20,8 +19,8 @@ def composite_function(*funcs):
       funcs: a tuple of tuples that contain function name and function kwags
 
     """
-    funcs = list(funcs) # Make tuple of tuples to a list of tuples 
-
+    funcs = list(funcs)
+    print(funcs)
     # Create list of partial functions, will use functions_mapping to get the function and func_params for the parameters if x[1] is a string. However if x[1] is a dict then just use that.
     funcs = list(map(lambda x: partial( functions_mapping.get(x[0]), **(func_params.get(x[1]) if isinstance(x[1], str) else x[1])), funcs))
     # funcs = tuple(funcs)
@@ -29,7 +28,6 @@ def composite_function(*funcs):
     def compose(f_in, g_in):
         return lambda x : g_in(f_in(x))
     return reduce(compose, funcs)
-
 
 class Config(dict):
 
@@ -59,16 +57,16 @@ class MusicProcessing(Config):
 
   def get_audio_signal(self, audio, funcs, kwargs):
 
-        audio_to_use = audio_config.get(audio)
-        composite_func = composite_function( *tuple(zip(funcs, kwargs)) )
-        return composite_func(audio_to_use)
+    audio_to_use = audio_config.get(audio)
+    composite_func = composite_function( *tuple(zip(funcs, kwargs)) )
+    return composite_func(audio_to_use)
 
   def make_transformation_dict(self, name, bending_func, audio, funcs, kwargs):
 
-      if isinstance(bending_func, DisplacementMap):
-        self.transformation_dict[name] = [bending_func, None]
-      else:
-        self.transformation_dict[name] = [bending_func, self.get_audio_signal(audio, funcs, kwargs)]
+    if isinstance(bending_func, DisplacementMap):
+      self.transformation_dict[name] = [bending_func, None]
+    else:
+      self.transformation_dict[name] = [bending_func, self.get_audio_signal(audio, funcs, kwargs)]
 
   def get_tranformations_from_config(self):
 
@@ -82,7 +80,6 @@ class MusicProcessing(Config):
       setattr(self, f'noise_{i}', self.get_audio_signal(name, funcs, kwargs))
 
   def get_chroma_signals_from_config(self):
-
     for i, (name, funcs, kwargs) in enumerate(zip(self.chromagram_audio, self.chromagram_funcs, self.chromagram_kwargs)):
       setattr(self, f'{name}_chroma', self.get_audio_signal(name, funcs, kwargs))
 
@@ -112,17 +109,14 @@ class MusicProcessing(Config):
 
   def setup(self, params):
 
-    print("Getting chromagrams...")
+    print("Getting chromagram or decomposition...")
     self.get_chroma_signals_from_config()
 
-    print("Getting onsets...")
+    print("Getting onsets/rms...")
     self.get_onsets_signals_from_config()
 
     print("Getting transformations dict...")
     self.get_tranformations_from_config()
-
-    # print("Getting noise signals...")
-    # self.get_noise_signals_from_config()
 
     print("Getting impulse signals...")
     self.get_impulse_signals(params)

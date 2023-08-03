@@ -138,24 +138,55 @@ def gauss_blur(img):
     return blur_image[0]
 
 
-@tf.function(input_signature=(tf.TensorSpec(shape=(None, None, 1), dtype=tf.float32),
-                              tf.TensorSpec(shape=(None, None, 1), dtype=tf.float32)))
-def get_comb_noise(cloud_noise_image, noise_image):
+# @tf.function(input_signature=(tf.TensorSpec(shape=(None, None, 1), dtype=tf.float32),
+#                               tf.TensorSpec(shape=(None, None, 1), dtype=tf.float32)))
+# def get_comb_noise(cloud_noise_image, noise_image):
 
-    # Get new noise and gauss filter
-    combined_noise = cloud_noise_image + noise_image
-    combined_noise = gauss_blur(combined_noise) # tfa.image.gaussian_filter2d(combined_noise, filter_shape=5, sigma=3)
+#     # Get new noise and gauss filter
+#     combined_noise = cloud_noise_image + noise_image
+#     combined_noise = gauss_blur(combined_noise) # tfa.image.gaussian_filter2d(combined_noise, filter_shape=5, sigma=3)
 
-    # Normalize new noise between -1 and 1
-    a = -1
-    b =  1
-    A = tf.reduce_min(combined_noise)
-    B = tf.reduce_max(combined_noise)
+#     # Normalize new noise between -1 and 1
+#     a = -1
+#     b =  1
+#     A = tf.reduce_min(combined_noise)
+#     B = tf.reduce_max(combined_noise)
 
-    C = (a-b + 1e-6)/(A-B + 1e-6)
-    k = (C*A - a)/(C)
+#     C = (a-b + 1e-6)/(A-B + 1e-6)
+#     k = (C*A - a)/(C)
 
-    return (combined_noise-k)*C
+#     return (combined_noise-k)*C
+
+
+def transformation_dict_frame(layer_name, functions, signal, frame, disp_maps, transformation_dict, compose):
+
+    """
+    layer_name: layer name where network bending will occur
+    functions: 1 or more functions used for augmentation at layer name
+    signal: np.array used as input for functions
+    frame: current frame to use
+    disp_maps: displacement maps
+    transformation_dict: current transformation dictionary to update
+    compose: function - lambda x : g_in(f_in(x))
+    """
+
+    # Just in case; Zoom requires to go from 1 to 0 as 1 is no zoom
+    signal_zoom = make_plateu(signal, zoom_params[layer_name]) 
+
+    composed_funcs = [lambda x: x] # Have at least 1 function so functools.reduce works
+    for func in list(functions):   # Will make non list to a list, else will keep same list
+
+        if isinstance(func, DisplacementMap):
+            gen_block_num = ''.join( filter(str.isdigit, layer_name) )
+            func = partial( func, flow=disp_maps[ int(gen_block_num)+1 ] )
+        elif isinstance(func, Zoom):
+            func = partial( func, frame_value=signal_zoom[frame] )
+        else:
+            func = partial( func, frame_value=signal[frame] )
+      
+        composed_funcs.append(func)
+    transformation_dict[layer_name] = reduce(compose, composed_funcs) # Just need to take an image as input and this will cascade through the functions
+    return transformation_dict
 
 
 class AudioReactive(MusicProcessing):
@@ -225,7 +256,7 @@ class AudioReactive(MusicProcessing):
   def get_chroma_weighted_latents(self, seeds, chroma):
 
     zs = generate_z(seeds)                        # (len(seeds), 512)
-    w_custom = self.stylegan2.mapping_network(zs) # (len(seeds), 8, 512)\\images\\logo-vertical.svg
+    w_custom = self.stylegan2.mapping_network(zs) # (len(seeds), 8, 512)
     w_custom_single = w_custom[:, 0, :]           # (len(seeds), 512)
     chroma_latents  = chroma @ w_custom_single    # (n, 12) @ (12, 512) -> (n, 512) of weighted latents
     chroma_latents  = chroma_latents[:, None, :]  # (n, 1, 512)
@@ -246,13 +277,16 @@ class AudioReactive(MusicProcessing):
     tempo_latents_B = self.get_latents_from_impulse( self.segmentation_idxs, transition_length=10, seeds=get_seeds('drum_latents_seed', self.segmentation_idxs) ) # (num_frames, 1, 512)
 
     # Get melody chroma weighted latents
-    m = 2
-    chroma_latents_melody   = self.get_chroma_weighted_latents(self.melody_latents_seeds, self.audio_chroma) # (n, 1, 512) audio_chroma, melody_chroma
+    m = 1
+    try:
+      chroma_latents_melody   = self.get_chroma_weighted_latents(self.melody_latents_seeds, self.audio_chroma) # (n, 1, 512)
+    except: 
+      chroma_latents_melody   = self.get_chroma_weighted_latents(self.melody_latents_seeds, self.melody_chroma) # (n, 1, 512)
     tempo_latents           = tf.cast(tf.tile(tempo_latents          , [1, 6, 1]), tf.float32)
     tempo_latents_B         = tf.cast(tf.tile(tempo_latents_B        , [1, m, 1]), tf.float32)
     chroma_latents_melody   = tf.cast(tf.tile(chroma_latents_melody  , [1, 2, 1]), tf.float32)
 
-    return tf.concat([chroma_latents_melody, tempo_latents], axis=1), tf.concat([chroma_latents_melody, tempo_latents_B, tempo_latents[:, 0:-m,:]], axis=1)
+    return tf.concat([chroma_latents_melody, tempo_latents], axis=1), tf.concat([tempo_latents_B, chroma_latents_melody, tempo_latents[:, 0:-m,:]], axis=1)
 
   def get_noise(self, noise, disp_maps, frame_value, sigma=1):
 
@@ -303,29 +337,13 @@ class AudioReactive(MusicProcessing):
 
       # Get input for frames
       w_in      = (1 - self.drums_rms[frame]) * latents_A[frame][None, ...] + (self.drums_rms[frame]) * latents_B[frame][None, ...] # (1, 8, 512) drums_rms, noise_0
-      disp_maps = [get_displacement_map(frame_value=sawtooth_signal[frame], amplitude_factor=self.drums_rms[frame], resolution_factor=0.9, shape=(2**res, 2**res))[-1] for res in range(2, 10)] # drums_rms, noise_0
+      disp_maps = [get_displacement_map(frame_value=sawtooth_signal[frame], amplitude_factor=self.drums_rms[frame], resolution_factor=0.75, shape=(2**res, 2**res))[-1] for res in range(2, 10)] # drums_rms, noise_0
       noise_in  = self.get_noise(noise_list, disp_maps, frame_value=sawtooth_signal[frame], sigma=rms_signal_for_noise[frame]) # 1-self.drums_rms[frame], noise_0
 
       # Network Bending
       transformation_dict = {}
-      for layer_name, (functions, frame_values) in self.transformation_dict.items():
-        
-        # Just in case; Zoom requires to go from 1 to 0 as 1 is no zoom
-        frame_values_zoom = make_plateu(frame_values, zoom_params[layer_name]) 
-
-        composed_funcs = [lambda x: x] # Have at least 1 function so functools.reduce works
-        for func in list(functions):   # Will make non list to a list, else will keep same list
-
-            if isinstance(func, DisplacementMap):
-                gen_block_num = ''.join( filter(str.isdigit, layer_name) )
-                func = partial( func, flow=disp_maps[ int(gen_block_num)+1 ] )
-            if isinstance(func, Zoom):
-                func = partial( func, frame_value=frame_values_zoom[frame] )
-            else:
-                func = partial( func, frame_value=frame_values[frame] )
-          
-            composed_funcs.append(func)
-        transformation_dict[layer_name] = reduce(compose, composed_funcs) # Just need to take an image as input and this will cascade through the functions
+      for layer_name, (functions, signal) in self.transformation_dict.items():
+        transformation_dict = transformation_dict_frame(layer_name, functions, signal, frame, disp_maps, transformation_dict, compose)
 
       # Feed model
       custom_img = self.stylegan2.generate_images(batch_size=1, w_in=w_in, noise_in=noise_in, transformation_dict=transformation_dict)

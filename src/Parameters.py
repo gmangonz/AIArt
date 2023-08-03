@@ -9,6 +9,8 @@ import numpy as np
 from Music_Processing import get_onsets, get_smoothed_peaks, make_plateu, get_chroma, calculate_rms, normalize, get_beat_plp, decompose, calculate_ema
 from Network_Bending import Zoom
 
+SHORT_AUDIO = False
+
 params = EasyDict()
 params.log2res = 9
 params.BATCH_SIZE = 32
@@ -21,14 +23,14 @@ params.drum_latents_seed = 42
 
 directory_params = EasyDict()
 directory_params.base_directory = r'/content/drive/MyDrive/Film 499/'
-directory_params.music_directory = r'/content/drive/MyDrive/DL-CV-ML Projects/AIART/audio/Short_Final'
+directory_params.music_directory = r'/content/drive/MyDrive/DL-CV-ML Projects/AIART/audio/Short_Final' if SHORT_AUDIO else r'/content/drive/MyDrive/DL-CV-ML Projects/AIART/audio' # /Short_Final'
 directory_params.training_checkpoint_directory = r'/content/drive/MyDrive/DL-CV-ML Projects/AIART/training_checkpoint/'
 directory_params.ckpt_folder_name = '4_17_22/Final_Test/'
 directory_params.ckpt_name = 'ckpt'
 directory_params.output_dir = '/content/drive/MyDrive/DL-CV-ML Projects/AIART/outputs/'
 directory_params.output_dir_name = '4_19/I/'
 directory_params.dataset_folder = '/content/drive/MyDrive/DL-CV-ML Projects/All_Data/AIART/' # 'DataSet/Abstract_Imgs/train/'
-directory_params.audio_name = 'test.mp3' # Music.mp3
+directory_params.audio_name = 'test.mp3' if SHORT_AUDIO else 'Music.mp3' # test, Music
 directory_params.melody_name = 'other.wav'
 directory_params.drums_name = 'drums.wav'
 directory_params.bass_name = 'bass.wav'
@@ -67,16 +69,6 @@ base_resolutions = {# Min, Max, Max amplitude
         (256, 256): (6, 24, 32),
         (512, 512): (7, 32, 64)
 }
-keys   = tf.TensorArray(tf.int32, 1, dynamic_size=True)
-values = tf.TensorArray(tf.int32, 1, dynamic_size=True)
-i = 0
-for k, v in base_resolutions.items():
-  keys   = keys.write(i, tf.convert_to_tensor(k[0]))
-  values = values.write(i, tf.convert_to_tensor(v))
-  i+=1
-
-base_resolutions_tf = tf.lookup.experimental.DenseHashTable(key_dtype=tf.int32, value_dtype=tf.int32, empty_key=0, deleted_key=-1, default_value=[7, 32, 50])
-base_resolutions_tf.insert(keys.stack(), values.stack())
 
 
 radius_1 = 36
@@ -107,6 +99,7 @@ func_params = {
     'smoothed_peaks_b':      dict(radius=4, distance=20, prominence=0.6, width=2, height=0.1, kernel_type='full', reverse=True), # radius=radius_2, kernel_type='half', reverse=True
     'smoothed_peaks_c':      dict(radius=3,                                       height=0.3, kernel_type='full', reverse=True), # height=0.5, kernel_type='half'
     'decompose':             dict(n_frames=num_frames, smooth=3, margin=5),
+    'chroma':                dict(sr=sr_audio, n_frames=num_frames, smooth=3, hop_length=512, use_harm=True),
 }
 
 zoom_params = {
@@ -134,18 +127,17 @@ audio_config = {
 
 
 signals_config = {
-    'transformation_dict_names'  : ['generator__block_5'                ],# 'generator__block_3'],
-    'transformation_dict_bending': [[Zoom()]                            ],#  Zoom()],
-    'transformation_dict_audio'  : ['drums'                             ],# 'bass'],
-    'transformation_dict_funcs'  : [['onset'       , 's_peaks'         ]],# ['onset'    , 's_peaks'         , 'plateu']],
-    'transformation_dict_kwargs' : [['onsets_mid_2', 'smoothed_peaks_b']],# ['bass_high', 'smoothed_peaks_c',  dict() ]],
+    'transformation_dict_names'  : ['generator__block_3'                , 'generator__block_5'],
+    'transformation_dict_bending': [[Zoom()]                            , [Zoom()]],
+    'transformation_dict_audio'  : ['drums'                             , 'bass'],
+    'transformation_dict_funcs'  : [['onset'       , 's_peaks'         ], ['onset'    , 's_peaks'         ]],
+    'transformation_dict_kwargs' : [['onsets_mid_2', 'smoothed_peaks_b'], ['bass_high', 'smoothed_peaks_c']],
 
-    'chromagram_audio' : ['audio'],       #, 'melody'
-    'chromagram_funcs' : [['decompose']], #, ['chroma']
-    'chromagram_kwargs': [['decompose']], #, ['chroma']
+    'chromagram_audio' : ['melody'],   #, 'melody'  , 'audio'
+    'chromagram_funcs' : ['chroma'], #, ['chroma'], ['decompose']
+    'chromagram_kwargs': ['chroma'], #, ['chroma'], ['decompose']
 
     'onsets_audio' : ['drums'],
     'onsets_funcs' : [['rms'                 , 'norm'        , 'resample'          , 'clip']],
     'onsets_kwargs': [[dict(window_size=None), dict(a=0, b=1), dict(num=num_frames), dict(a_min=0, a_max=1)]],
 }
-
