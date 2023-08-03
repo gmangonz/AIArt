@@ -219,14 +219,27 @@ def butter_filter(data, cutoff, fs, ftype, order=5):
     y = scipy.signal.filtfilt(b, a, data)
     return y
 
-def tempo_segmentation(audio, num_frames, cutoff=1, fs=100, ftype='low'):
+# def tempo_segmentation(audio, num_frames, cutoff=1, fs=100, ftype='low'):
+
+#     """ Cheap way to perform tempo segmentation. """
+
+#     rms         = calculate_rms(audio)
+#     filt_energy = butter_filter(rms, cutoff=cutoff, fs=fs, ftype=ftype)
+#     filt_energy = np.clip(scipy.signal.resample(filt_energy, num_frames), filt_energy.min(), filt_energy.max())
+#     return scipy.signal.find_peaks_cwt(1-filt_energy, np.arange(1,400))
+
+def tempo_segmentation(audio, num_frames, cutoff=1, fs=150, ftype='low'):
 
     """ Cheap way to perform tempo segmentation. """
 
     rms         = calculate_rms(audio)
     filt_energy = butter_filter(rms, cutoff=cutoff, fs=fs, ftype=ftype)
     filt_energy = np.clip(scipy.signal.resample(filt_energy, num_frames), filt_energy.min(), filt_energy.max())
-    return scipy.signal.find_peaks_cwt(1-filt_energy, np.arange(1,400))
+    # filt_energy = scipy.signal.resample(scipy.ndimage.gaussian_filter1d(librosa.feature.rms(y=audio)[0], 64, axis=-1, order=0, output=None, mode='reflect', cval=0.0, truncate=4.0), num_frames)
+    # plt.plot(filt_energy)
+    # plt.show()
+    return scipy.signal.find_peaks_cwt(1-filt_energy, np.arange(30,350))
+
 
 def calculate_rms(audio, window_size=None):
 
